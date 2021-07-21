@@ -1,0 +1,26 @@
+# @package _group_
+
+porseman_train:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.retriever.porseman-train
+
+porseman_dev:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.retriever.porseman-dev
+
+porseman_test:
+  _target_: dpr.data.retriever_data.CsvQASrc
+  file: data.retriever.porseman-test
+
+aa_train:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.aa.train
+
+aa_dev:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.aa.dev
+
+aa_test:
+  _target_: dpr.data.retriever_data.CsvQASrc
+  file: data.aa.test
+

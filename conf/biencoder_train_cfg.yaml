@@ -1,13 +1,13 @@
 
 # configuration groups
 defaults:
-  - encoder: hf_bert
-  - train: biencoder_default
-  - datasets: encoder_train_default
+  - encoder: multilingual_bert
+  - train: porseman_biencoder
+  - datasets: porseman_datasets
 
-train_datasets:
-dev_datasets:
-output_dir:
+train_datasets: [porseman_train]
+dev_datasets: [porseman_dev]
+output_dir: porseman_biencoder_output
 train_sampling_rates:
 loss_scale_factors:
 
@@ -16,8 +16,8 @@ do_lower_case: True
 
 fix_ctx_encoder: False
 val_av_rank_start_epoch: 30
-seed: 12345
-checkpoint_file_name: dpr_biencoder
+seed: 42
+checkpoint_file_name: porseman_biencoder
 
 # A trained bi-encoder checkpoint file to initialize the model
 model_file:
@@ -30,7 +30,7 @@ device:
 distributed_world_size:
 distributed_port:
 no_cuda: False
-n_gpu:
+n_gpu: 1
 fp16: False
 
 # For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']."

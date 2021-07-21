@@ -469,6 +469,22 @@ def download_file(s3_url: str, out_dir: str, file_name: str):
 
 
 def download(resource_key: str, out_dir: str = None):
+    # porseman resources
+    porseman_datasets_path = '/content/drive/MyDrive/IRDataset/'
+    if resource_key == 'data.retriever.porseman-train':
+        path = os.path.join(porseman_datasets_path, 'IR-train.json')
+        return [path]
+    if resource_key == 'data.retriever.porseman-dev':
+        path = os.path.join(porseman_datasets_path, 'IR-dev.json')
+        return [path]
+    if resource_key == 'data.retriever.porseman-test':
+        path = os.path.join(porseman_datasets_path, 'IR-test.csv')
+        return [path]
+    if resource_key == 'data.porseman_wiki':
+        path = os.path.join(porseman_datasets_path, 'IR-wiki.tsv')
+        return [path]
+
+    # other resources
     if resource_key not in RESOURCES_MAP:
         # match by prefix
         resources = [k for k in RESOURCES_MAP.keys() if k.startswith(resource_key)]

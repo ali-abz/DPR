@@ -1,0 +1,11 @@
+# @package _group_
+
+porseman_wiki:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.porseman_wiki
+  id_prefix: ''
+
+aa_wiki:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.aa.docs
+  id_prefix: ''
