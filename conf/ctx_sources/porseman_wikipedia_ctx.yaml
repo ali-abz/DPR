@@ -5,7 +5,7 @@ porseman_wiki:
   file: data.porseman_wiki
   id_prefix: ''
 
-aa_wiki:
+dpr_wiki:
   _target_: dpr.data.retriever_data.CsvCtxSrc
-  file: data.aa.docs
-  id_prefix: ''
+  file: data.wikipedia_split.psgs_w100
+  id_prefix: 'wiki:'
