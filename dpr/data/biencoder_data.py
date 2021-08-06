@@ -1,5 +1,4 @@
 import collections
-import csv
 import glob
 import logging
 import os
@@ -25,6 +24,15 @@ class BiEncoderSample(object):
     positive_passages: List[BiEncoderPassage]
     negative_passages: List[BiEncoderPassage]
     hard_negative_passages: List[BiEncoderPassage]
+
+
+class GradedBiEncoderSample(object):
+    query: str
+    positive_passages: List[BiEncoderPassage]
+    negative_passages: List[BiEncoderPassage]
+    hard_negative_passages: List[BiEncoderPassage]
+    related_passage: List[BiEncoderPassage]
+    highly_related_passage: List[BiEncoderPassage]
 
 
 class RepTokenSelector(object):
@@ -179,6 +187,94 @@ class JsonQADataset(Dataset):
         r.positive_passages = [create_passage(ctx) for ctx in positive_ctxs]
         r.negative_passages = [create_passage(ctx) for ctx in negative_ctxs]
         r.hard_negative_passages = [create_passage(ctx) for ctx in hard_negative_ctxs]
+        return r
+
+    def __len__(self):
+        return len(self.data)
+
+    def get_qas(self) -> Tuple[List[str], List[str]]:
+        return [s["question"] for s in self.data], [s["answers"] for s in self.data]
+
+    def get_qas_range(
+        self, start_idx: int, end_idx: int
+    ) -> Tuple[List[str], List[str]]:
+        return (
+            [s["question"] for s in self.data[start_idx:end_idx]],
+            [s["answers"] for s in self.data[start_idx:end_idx]],
+        )
+
+
+class JsonGradedQADataset(Dataset):
+    def __init__(
+        self,
+        file: str,
+        selector: DictConfig = None,
+        special_token: str = None,
+        encoder_type: str = None,
+        shuffle_positives: bool = False,
+        normalize: bool = False,
+        query_special_suffix: str = None,
+    ):
+        super().__init__(
+            selector,
+            special_token=special_token,
+            encoder_type=encoder_type,
+            shuffle_positives=shuffle_positives,
+            query_special_suffix=query_special_suffix,
+        )
+        self.file = file
+        self.data_files = []
+        self.data = []
+        self.normalize = normalize
+        logger.info("Data files: %s", self.data_files)
+
+    def load_data(self):
+        self.data_files = get_dpr_files(self.file)
+        data = read_data_from_json_files(self.data_files)
+        # filter those without positive ctx
+        self.data = [r for r in data if len(r["positive_ctxs"]) > 0]
+        logger.info("Total cleaned data size: {}".format(len(self.data)))
+
+    def __getitem__(self, index) -> GradedBiEncoderSample:
+        json_sample = self.data[index]
+        r = GradedBiEncoderSample()
+        r.query = self._process_query(json_sample["question"])
+
+        positive_ctxs = json_sample["positive_ctxs"]
+        negative_ctxs = (
+            json_sample["negative_ctxs"] if "negative_ctxs" in json_sample else []
+        )
+        hard_negative_ctxs = (
+            json_sample["hard_negative_ctxs"]
+            if "hard_negative_ctxs" in json_sample
+            else []
+        )
+        related_ctxs = (
+            json_sample["related_ctxs"]
+            if "related_ctxs" in json_sample
+            else []
+        )
+        highly_related_ctxs = (
+            json_sample["highly_related_ctxs"]
+            if "highly_related_ctxs" in json_sample
+            else []
+        )
+
+        for ctx in positive_ctxs + negative_ctxs + hard_negative_ctxs + related_ctxs + highly_related_ctxs:
+            if "title" not in ctx:
+                ctx["title"] = None
+
+        def create_passage(ctx: dict):
+            return BiEncoderPassage(
+                normalize_passage(ctx["text"]) if self.normalize else ctx["text"],
+                ctx["title"],
+            )
+
+        r.positive_passages = [create_passage(ctx) for ctx in positive_ctxs]
+        r.negative_passages = [create_passage(ctx) for ctx in negative_ctxs]
+        r.hard_negative_passages = [create_passage(ctx) for ctx in hard_negative_ctxs]
+        r.related_passage = [create_passage(ctx) for ctx in related_ctxs]
+        r.highly_related_passage = [create_passage(ctx) for ctx in highly_related_ctxs]
         return r
 
     def __len__(self):
@@ -473,7 +569,7 @@ class JsonLTablesQADataset(Dataset):
         if self.is_train_set:
             self.rnd.shuffle(hard_negative_ctxs)
         positive_ctxs = positive_ctxs[0:1]
-        hard_negative_ctxs = hard_negative_ctxs[0 : self.max_negatives]
+        hard_negative_ctxs = hard_negative_ctxs[0:self.max_negatives]
 
         r.positive_passages = [
             BiEncoderPassage(self.linearize_func(self, ctx, True), ctx["caption"])

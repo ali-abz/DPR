@@ -1,45 +1,53 @@
 # @package _group_
 
+# porseman 1 (mozafari)
 porseman_train:
   _target_: dpr.data.biencoder_data.JsonQADataset
-  file: data.retriever.porseman-train
+  file: data.porseman-train
 
 porseman_dev:
   _target_: dpr.data.biencoder_data.JsonQADataset
-  file: data.retriever.porseman-dev
+  file: data.porseman-dev
 
 porseman_test:
   _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.porseman-test
+  file: data.porseman-test
 
-nq_test:
-  _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.qas.nq-test
+# porseman 2
+porseman_train2:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.porseman-train2
 
-nq_train:
-  _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.qas.nq-train
+porseman_dev2:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.porseman-dev2
 
-nq_dev:
-  _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.qas.nq-dev
+porseman_test2:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: data.porseman-test2
 
-trivia_test:
-  _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.qas.trivia-test
+# porseman 2 pos (test is: porseman_test2)
+porseman_train2_pos:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: data.porseman-train2_pos
 
-trivia_train:
-  _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.qas.trivia-train
+porseman_dev2_pos:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: data.porseman-dev2_pos
 
-trivia_dev:
-  _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.qas.trivia-dev
+# trivia (no test1)
+trivia_train_1:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.trivia-train-1
 
-webq_test:
-  _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.qas.webq-test
-  
-curatedtrec_test:
-  _target_: dpr.data.retriever_data.CsvQASrc
-  file: data.retriever.qas.curatedtrec-test
+trivia_train_40:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.trivia-train-40
+
+trivia_train_79:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.retriever.trivia-train-79
+
+trivia_dev_1:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.trivia-dev-1

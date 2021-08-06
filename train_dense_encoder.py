@@ -25,7 +25,13 @@ from torch import Tensor as T
 from torch import nn
 
 from dpr.models import init_biencoder_components
-from dpr.models.biencoder import BiEncoder, BiEncoderNllLoss, BiEncoderBatch
+from dpr.models.biencoder import (
+    BiEncoder,
+    BiEncoderNllLoss,
+    GradedBiEncoderNllLoss,
+    # BiEncoderBatch,
+    GradedBiEncoderBatch,
+)
 from dpr.options import (
     setup_cfg_gpu,
     set_seed,
@@ -251,6 +257,8 @@ class BiEncoderTrainer(object):
         total_correct_predictions = 0
         num_hard_negatives = cfg.train.hard_negatives
         num_other_negatives = cfg.train.other_negatives
+        num_related = cfg.train.related
+        num_highly_related = cfg.train.highly_related
         log_result_step = cfg.train.log_batch_step
         batches = 0
         dataset = 0
@@ -259,12 +267,14 @@ class BiEncoderTrainer(object):
             if isinstance(samples_batch, Tuple):
                 samples_batch, dataset = samples_batch
             logger.info("Eval step: %d ,rnk=%s", i, cfg.local_rank)
-            biencoder_input = BiEncoder.create_biencoder_input2(
+            biencoder_input = BiEncoder.create_graded_biencoder_input2(
                 samples_batch,
                 self.tensorizer,
                 True,
                 num_hard_negatives,
                 num_other_negatives,
+                num_related,
+                num_highly_related,
                 shuffle=False,
             )
 
@@ -342,8 +352,7 @@ class BiEncoderTrainer(object):
         for i, samples_batch in enumerate(data_iterator.iterate_ds_data()):
             # samples += 1
             if (
-                len(q_represenations)
-                > cfg.train.val_av_rank_max_qs / distributed_factor
+                len(q_represenations) > cfg.train.val_av_rank_max_qs / distributed_factor
             ):
                 break
 
@@ -384,9 +393,9 @@ class BiEncoderTrainer(object):
                     # otherwise the other input tensors will be split but only the first split will be called
                     continue
 
-                ctx_ids_batch = ctxs_ids[batch_start : batch_start + sub_batch_size]
+                ctx_ids_batch = ctxs_ids[batch_start:batch_start + sub_batch_size]
                 ctx_seg_batch = ctxs_segments[
-                    batch_start : batch_start + sub_batch_size
+                    batch_start:batch_start + sub_batch_size
                 ]
 
                 q_attn_mask = self.tensorizer.get_attn_mask(q_ids)
@@ -476,6 +485,8 @@ class BiEncoderTrainer(object):
         rolling_loss_step = cfg.train.train_rolling_loss_step
         num_hard_negatives = cfg.train.hard_negatives
         num_other_negatives = cfg.train.other_negatives
+        num_related = cfg.train.related
+        num_highly_related = cfg.train.highly_related
         seed = cfg.seed
         self.biencoder.train()
         epoch_batches = train_data_iterator.max_iterations
@@ -497,17 +508,29 @@ class BiEncoderTrainer(object):
             data_iteration = train_data_iterator.get_iteration()
             random.seed(seed + epoch + data_iteration)
 
-            biencoder_batch = BiEncoder.create_biencoder_input2(
+            # biencoder_batch = BiEncoder.create_biencoder_input2(
+            #     samples_batch,
+            #     self.tensorizer,
+            #     True,
+            #     num_hard_negatives,
+            #     num_other_negatives,
+            #     shuffle=True,
+            #     shuffle_positives=shuffle_positives,
+            #     query_token=special_token,
+            # )
+
+            biencoder_batch = BiEncoder.create_graded_biencoder_input2(
                 samples_batch,
                 self.tensorizer,
                 True,
                 num_hard_negatives,
                 num_other_negatives,
+                num_related,
+                num_highly_related,
                 shuffle=True,
                 shuffle_positives=shuffle_positives,
                 query_token=special_token,
             )
-
             # get the token to be used for representation selection
             from dpr.data.biencoder_data import DEFAULT_SELECTOR
 
@@ -650,6 +673,10 @@ def _calc_loss(
     local_ctx_vectors,
     local_positive_idxs,
     local_hard_negatives_idxs: list = None,
+    local_negatives_idxs: list = None,
+    local_related_idxs: list = None,
+    local_highly_related_idxs: list = None,
+    local_relations: list = None,
     loss_scale: float = None,
 ) -> Tuple[T, bool]:
     """
@@ -657,7 +684,7 @@ def _calc_loss(
     across all the nodes.
     """
     distributed_world_size = cfg.distributed_world_size or 1
-    if distributed_world_size > 1:
+    if distributed_world_size > 1:  # no grade change in this section. graded modifications are in else section
         q_vector_to_send = (
             torch.empty_like(local_q_vector).cpu().copy_(local_q_vector).detach_()
         )
@@ -712,12 +739,20 @@ def _calc_loss(
         global_ctxs_vector = local_ctx_vectors
         positive_idx_per_question = local_positive_idxs
         hard_negatives_per_question = local_hard_negatives_idxs
+        negatives_per_question = local_negatives_idxs
+        related_per_question = local_related_idxs
+        highly_related_per_question = local_highly_related_idxs
+        relations_per_question = local_relations
 
     loss, is_correct = loss_function.calc(
-        global_q_vector,
-        global_ctxs_vector,
-        positive_idx_per_question,
-        hard_negatives_per_question,
+        q_vectors=global_q_vector,
+        ctx_vectors=global_ctxs_vector,
+        positive_idx_per_question=positive_idx_per_question,
+        hard_negative_idx_per_question=hard_negatives_per_question,
+        negative_idx_per_question=negatives_per_question,
+        related_idx_per_question=related_per_question,
+        highly_related_idx_per_question=highly_related_per_question,
+        relations_per_question=relations_per_question,
         loss_scale=loss_scale,
     )
 
@@ -726,7 +761,7 @@ def _calc_loss(
 
 def _do_biencoder_fwd_pass(
     model: nn.Module,
-    input: BiEncoderBatch,
+    input: GradedBiEncoderBatch,
     tensorizer: Tensorizer,
     cfg,
     encoder_type: str,
@@ -734,7 +769,7 @@ def _do_biencoder_fwd_pass(
     loss_scale: float = None,
 ) -> Tuple[torch.Tensor, int]:
 
-    input = BiEncoderBatch(**move_to_device(input._asdict(), cfg.device))
+    input = GradedBiEncoderBatch(**move_to_device(input._asdict(), cfg.device))
 
     q_attn_mask = tensorizer.get_attn_mask(input.question_ids)
     ctx_attn_mask = tensorizer.get_attn_mask(input.context_ids)
@@ -765,7 +800,7 @@ def _do_biencoder_fwd_pass(
 
     local_q_vector, local_ctx_vectors = model_out
 
-    loss_function = BiEncoderNllLoss()
+    loss_function = GradedBiEncoderNllLoss()
 
     loss, is_correct = _calc_loss(
         cfg,
@@ -774,6 +809,10 @@ def _do_biencoder_fwd_pass(
         local_ctx_vectors,
         input.is_positive,
         input.hard_negatives,
+        input.negatives,
+        input.related,
+        input.highly_related,
+        input.relations,
         loss_scale=loss_scale,
     )
 
@@ -827,7 +866,7 @@ if __name__ == "__main__":
     # convert the cli params added by torch.distributed.launch into Hydra format
     for arg in sys.argv:
         if arg.startswith("--"):
-            hydra_formatted_args.append(arg[len("--") :])
+            hydra_formatted_args.append(arg[len("--"):])
         else:
             hydra_formatted_args.append(arg)
     logger.info("Hydra formatted Sys.argv: %s", hydra_formatted_args)

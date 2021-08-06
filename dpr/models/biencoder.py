@@ -13,6 +13,7 @@ import collections
 import logging
 import random
 from typing import Tuple, List
+from IPython import embed
 
 import numpy as np
 import torch
@@ -20,7 +21,7 @@ import torch.nn.functional as F
 from torch import Tensor as T
 from torch import nn
 
-from dpr.data.biencoder_data import BiEncoderSample
+from dpr.data.biencoder_data import BiEncoderSample, GradedBiEncoderSample
 from dpr.utils.data_utils import Tensorizer
 from dpr.utils.model_utils import CheckpointState
 
@@ -35,6 +36,23 @@ BiEncoderBatch = collections.namedtuple(
         "ctx_segments",
         "is_positive",
         "hard_negatives",
+        "encoder_type",
+    ],
+)
+
+GradedBiEncoderBatch = collections.namedtuple(
+    "GradedBiENcoderInput",
+    [
+        "question_ids",
+        "question_segments",
+        "context_ids",
+        "ctx_segments",
+        "is_positive",
+        "hard_negatives",
+        "negatives",
+        "related",
+        "highly_related",
+        "relations",
         "encoder_type",
     ],
 )
@@ -146,101 +164,6 @@ class BiEncoder(nn.Module):
 
         return q_pooled_out, ctx_pooled_out
 
-    # TODO delete once moved to the new method
-    @classmethod
-    def create_biencoder_input(
-        cls,
-        samples: List,
-        tensorizer: Tensorizer,
-        insert_title: bool,
-        num_hard_negatives: int = 0,
-        num_other_negatives: int = 0,
-        shuffle: bool = True,
-        shuffle_positives: bool = False,
-        hard_neg_fallback: bool = True,
-    ) -> BiEncoderBatch:
-        """
-        Creates a batch of the biencoder training tuple.
-        :param samples: list of data items (from json) to create the batch for
-        :param tensorizer: components to create model input tensors from a text sequence
-        :param insert_title: enables title insertion at the beginning of the context sequences
-        :param num_hard_negatives: amount of hard negatives per question (taken from samples' pools)
-        :param num_other_negatives: amount of other negatives per question (taken from samples' pools)
-        :param shuffle: shuffles negative passages pools
-        :param shuffle_positives: shuffles positive passages pools
-        :return: BiEncoderBatch tuple
-        """
-        question_tensors = []
-        ctx_tensors = []
-        positive_ctx_indices = []
-        hard_neg_ctx_indices = []
-
-        for sample in samples:
-            # ctx+ & [ctx-] composition
-            # as of now, take the first(gold) ctx+ only
-            if shuffle and shuffle_positives:
-                positive_ctxs = sample["positive_ctxs"]
-                positive_ctx = positive_ctxs[np.random.choice(len(positive_ctxs))]
-            else:
-                positive_ctx = sample["positive_ctxs"][0]
-
-            neg_ctxs = sample["negative_ctxs"]
-            hard_neg_ctxs = sample["hard_negative_ctxs"]
-
-            if shuffle:
-                random.shuffle(neg_ctxs)
-                random.shuffle(hard_neg_ctxs)
-
-            if hard_neg_fallback and len(hard_neg_ctxs) == 0:
-                hard_neg_ctxs = neg_ctxs[0:num_hard_negatives]
-
-            neg_ctxs = neg_ctxs[0:num_other_negatives]
-            hard_neg_ctxs = hard_neg_ctxs[0:num_hard_negatives]
-
-            all_ctxs = [positive_ctx] + neg_ctxs + hard_neg_ctxs
-            hard_negatives_start_idx = 1
-            hard_negatives_end_idx = 1 + len(hard_neg_ctxs)
-
-            current_ctxs_len = len(ctx_tensors)
-
-            sample_ctxs_tensors = [
-                tensorizer.text_to_tensor(
-                    ctx["text"],
-                    title=ctx["title"] if (insert_title and "title" in ctx) else None,
-                )
-                for ctx in all_ctxs
-            ]
-
-            ctx_tensors.extend(sample_ctxs_tensors)
-            positive_ctx_indices.append(current_ctxs_len)
-            hard_neg_ctx_indices.append(
-                [
-                    i
-                    for i in range(
-                        current_ctxs_len + hard_negatives_start_idx,
-                        current_ctxs_len + hard_negatives_end_idx,
-                    )
-                ]
-            )
-
-            question_tensors.append(tensorizer.text_to_tensor(question))
-
-        ctxs_tensor = torch.cat([ctx.view(1, -1) for ctx in ctx_tensors], dim=0)
-        questions_tensor = torch.cat([q.view(1, -1) for q in question_tensors], dim=0)
-
-        ctx_segments = torch.zeros_like(ctxs_tensor)
-        question_segments = torch.zeros_like(questions_tensor)
-
-        return BiEncoderBatch(
-            questions_tensor,
-            question_segments,
-            ctxs_tensor,
-            ctx_segments,
-            positive_ctx_indices,
-            hard_neg_ctx_indices,
-            "question",
-        )
-
     @classmethod
     def create_biencoder_input2(
         cls,
@@ -350,6 +273,160 @@ class BiEncoder(nn.Module):
             "question",
         )
 
+    @classmethod
+    def create_graded_biencoder_input2(
+        cls,
+        samples: List[GradedBiEncoderSample],
+        tensorizer: Tensorizer,
+        insert_title: bool,
+        num_hard_negatives: int = 0,
+        num_other_negatives: int = 0,
+        num_related: int = 0,
+        num_highly_related: int = 0,
+        shuffle: bool = True,
+        shuffle_positives: bool = False,
+        hard_neg_fallback: bool = True,
+        query_token: str = None,
+    ) -> GradedBiEncoderBatch:
+        """
+        Creates a batch of the biencoder training tuple.
+        :param samples: list of GradedBiEncoderSample-s to create the batch for
+        :param tensorizer: components to create model input tensors from a text sequence
+        :param insert_title: enables title insertion at the beginning of the context sequences
+        :param num_hard_negatives: amount of hard negatives per question (taken from samples' pools)
+        :param num_other_negatives: amount of other negatives per question (taken from samples' pools)
+        :param shuffle: shuffles negative passages pools
+        :param shuffle_positives: shuffles positive passages pools
+        :return: BiEncoderBatch tuple
+        """
+        question_tensors = []
+        ctx_tensors = []
+        positive_ctx_indices = []
+        hard_neg_ctx_indices = []
+        negatives_ctx_indices = []
+        related_ctx_indices = []
+        highly_related_ctx_indices = []
+        relations = []
+
+        for sample in samples:
+            # ctx+ & [ctx-] composition
+            # as of now, take the first(gold) ctx+ only
+
+            if shuffle and shuffle_positives:
+                positive_ctxs = sample.positive_passages
+                positive_ctx = positive_ctxs[np.random.choice(len(positive_ctxs))]
+            else:
+                positive_ctx = sample.positive_passages[0]
+
+            neg_ctxs = sample.negative_passages
+            hard_neg_ctxs = sample.hard_negative_passages
+            related_ctxs = sample.related_passage
+            highly_related_ctxs = sample.highly_related_passage
+            question = sample.query
+            # question = normalize_question(sample.query)
+
+            if shuffle:
+                random.shuffle(neg_ctxs)
+                random.shuffle(hard_neg_ctxs)
+                random.shuffle(related_ctxs)
+                random.shuffle(highly_related_ctxs)
+
+            if hard_neg_fallback and len(hard_neg_ctxs) == 0:
+                hard_neg_ctxs = neg_ctxs[0:num_hard_negatives]
+
+            neg_ctxs = neg_ctxs[0:num_other_negatives]
+            hard_neg_ctxs = hard_neg_ctxs[0:num_hard_negatives]
+            related_ctxs = related_ctxs[0:num_related]
+            highly_related_ctxs = highly_related_ctxs[0:num_highly_related]
+
+            all_ctxs = [positive_ctx] + neg_ctxs + hard_neg_ctxs + related_ctxs + highly_related_ctxs
+
+            # relations
+            rel_positive, rel_highly_related, rel_related, rel_negative, rel_hard_negative = 5, 2, 2, 0, 0
+            question_relations = []
+            if relations != []:  # pre-padding with negatives
+                question_relations = [rel_negative] * len(relations[-1])
+            question_relations.extend([rel_positive])
+            question_relations.extend([rel_negative] * len(neg_ctxs))
+            question_relations.extend([rel_hard_negative] * len(hard_neg_ctxs))
+            question_relations.extend([rel_related] * len(related_ctxs))
+            question_relations.extend([rel_highly_related] * len(highly_related_ctxs))
+            relations.append(question_relations)
+
+            # post-padding with negatives
+            for relation in relations:
+                if len(relation) < len(relations[-1]):
+                    num_negatives_to_post_pad = len(relations[-1]) - len(relation)
+                    relation.extend([rel_negative] * num_negatives_to_post_pad)
+
+            # calculate all positions
+            current_ctxs_len = len(ctx_tensors)
+            positive_ctx_indices.append(current_ctxs_len)
+
+            negatives_start_idx = 1 + current_ctxs_len
+            negatives_end_idx = 1 + len(neg_ctxs) + current_ctxs_len
+            negatives_idx_range = list(range(negatives_start_idx, negatives_end_idx))
+            negatives_ctx_indices.append(negatives_idx_range)
+
+            hard_negatives_start_idx = negatives_end_idx + current_ctxs_len
+            hard_negatives_end_idx = negatives_end_idx + len(hard_neg_ctxs) + current_ctxs_len
+            hard_negatives_idx_range = list(range(hard_negatives_start_idx, hard_negatives_end_idx))
+            hard_neg_ctx_indices.append(hard_negatives_idx_range)
+
+            related_start_idx = hard_negatives_end_idx + current_ctxs_len
+            related_end_idx = hard_negatives_end_idx + len(related_ctxs) + current_ctxs_len
+            related_idx_range = list(range(related_start_idx, related_end_idx))
+            related_ctx_indices.append(related_idx_range)
+
+            highly_related_start_idx = related_end_idx + current_ctxs_len
+            highly_related_end_idx = related_end_idx + len(highly_related_ctxs) + current_ctxs_len
+            highly_related_idx_range = list(range(highly_related_start_idx, highly_related_end_idx))
+            highly_related_ctx_indices.append(highly_related_idx_range)
+
+            # add all ctxs to ctx_tensors
+            sample_ctxs_tensors = [
+                tensorizer.text_to_tensor(
+                    ctx.text, title=ctx.title if (insert_title and ctx.title) else None
+                )
+                for ctx in all_ctxs
+            ]
+
+            ctx_tensors.extend(sample_ctxs_tensors)
+
+            if query_token:
+                # TODO: tmp workaround for EL, remove or revise
+                if query_token == "[START_ENT]":
+                    query_span = _select_span_with_token(
+                        question, tensorizer, token_str=query_token
+                    )
+                    question_tensors.append(query_span)
+                else:
+                    question_tensors.append(
+                        tensorizer.text_to_tensor(" ".join([query_token, question]))
+                    )
+            else:
+                question_tensors.append(tensorizer.text_to_tensor(question))
+
+        ctxs_tensor = torch.cat([ctx.view(1, -1) for ctx in ctx_tensors], dim=0)
+        questions_tensor = torch.cat([q.view(1, -1) for q in question_tensors], dim=0)
+
+        ctx_segments = torch.zeros_like(ctxs_tensor)
+        question_segments = torch.zeros_like(questions_tensor)
+
+        return GradedBiEncoderBatch(
+            questions_tensor,
+            question_segments,
+            ctxs_tensor,
+            ctx_segments,
+            positive_ctx_indices,
+            hard_neg_ctx_indices,
+            negatives_ctx_indices,
+            related_ctx_indices,
+            highly_related_ctx_indices,
+            relations,
+            "question",
+        )
+
     def load_state(self, saved_state: CheckpointState):
         # TODO: make a long term HF compatibility fix
         if "question_model.embeddings.position_ids" in saved_state.model_dict:
@@ -410,6 +487,101 @@ class BiEncoderNllLoss(object):
         return dot_product_scores
 
 
+class GradedBiEncoderNllLoss(object):
+    @staticmethod
+    def NDCG(ranks: T, verbose: True):
+        positions = torch.stack([torch.log2(x) for x in torch.arange(2., len(ranks) + 2)])
+        dcg = (ranks / positions).sum()
+        sorted_ranks = torch.stack(sorted(ranks, reverse=True))
+        ideal_dcg = (sorted_ranks / positions).sum()
+        ndcg = dcg / ideal_dcg
+        if verbose:
+            print(f'NDCG ranks: {ranks}')
+            # print(f'NDCG positions: {positions}')
+            # print(f'NDCG dcg: {dcg}')
+            # print(f'NDCG sorted_ranks: {sorted_ranks}')
+            # print(f'NDCG ideal dcg: {ideal_dcg}')
+            print(f'NDCG ndcg: {ndcg}')
+        return ndcg
+
+    def ANDCG_loss(self, scores: T, relations: list, reduction: str = 'mean', verbose=True):
+        if reduction not in ['mean', 'sum', 'none']:
+            error_str = f'reduction is expected to be in ["mean", "sum", "none"], got: {reduction}'
+            raise ValueError(error_str)
+        relations = T(relations)
+        losses = []
+        for q_scores, q_relations in zip(scores, relations):
+            sorted_q_scores, sorted_q_relations = zip(*sorted(zip(q_scores, q_relations), reverse=True))
+            sorted_q_scores = torch.stack(sorted_q_scores)
+            sorted_q_relations = torch.stack(sorted_q_relations)
+            if verbose:
+                print(f'ANDCG sorted_q_scores: {sorted_q_scores}')
+                print(f'ANDCG sorted_q_relations: {sorted_q_relations}')
+            ndcg = self.NDCG(sorted_q_relations * sorted_q_scores, verbose)
+            losses.append(1 - ndcg)
+        losses = torch.stack(losses)
+        if reduction == 'mean':
+            return torch.mean(losses)
+        if reduction == 'sum':
+            return torch.sum(losses)
+        return losses
+
+    def calc(
+        self,
+        q_vectors: T,
+        ctx_vectors: T,
+        positive_idx_per_question: list,
+        hard_negative_idx_per_question: list = None,
+        negative_idx_per_question: list = None,
+        related_idx_per_question: list = None,
+        highly_related_idx_per_question: list = None,
+        relations_per_question: list = None,
+        loss_scale: float = None,
+        verbose=False,
+    ) -> Tuple[T, int]:
+        """
+        Computes nll loss for the given lists of question and ctx vectors.
+        Note that although hard_negative_idx_per_question in not currently in use, one can use it for the
+        loss modifications. For example - weighted NLL with different factors for hard vs regular negatives.
+        :return: a tuple of loss value and amount of correct predictions per batch
+        """
+        scores = self.get_scores(q_vectors, ctx_vectors)
+        a3n_loss_mean = self.ANDCG_loss(scores, relations_per_question, reduction='mean', verbose=False)
+        _, max_idxs = torch.max(scores, dim=1)
+        correct_predictions_count = (
+            max_idxs == torch.tensor(positive_idx_per_question).to(max_idxs.device)
+        ).sum()
+        if verbose:
+            print('=' * 40)
+            print('dpr/models/biencoder.py:GradedBiEncoderNllLoss ~line 630')
+            # print(f'positive_idx_per_question: {positive_idx_per_question}')
+            # print(f'hard_negative_idx_per_question: {hard_negative_idx_per_question}')
+            # print(f'negative_idx_per_question: {negative_idx_per_question}')
+            # print(f'related_idx_per_question: {related_idx_per_question}')
+            # print(f'highly_related_idx_pre_question: {highly_related_idx_per_question}')
+            print(f'relations: {relations_per_question}')
+            print(f'scores: {scores}')
+            # print(f'scores shape: {scores.shape}')
+            # print(f'softmax_scores: {softmax_scores}')
+            print(f'a3n_loss_mean: {a3n_loss_mean}')
+            # print(f'max_score: {max_score}')
+            # print(f'max_idxs: {max_idxs}')
+            # print(f'correct_predictions_count: {correct_predictions_count}')
+            print('=' * 40)
+            embed()
+
+        return a3n_loss_mean, correct_predictions_count
+
+    @staticmethod
+    def get_scores(q_vector: T, ctx_vectors: T) -> T:
+        f = GradedBiEncoderNllLoss.get_similarity_function()
+        return f(q_vector, ctx_vectors)
+
+    @staticmethod
+    def get_similarity_function():
+        return dot_product_scores
+
+
 def _select_span_with_token(
     text: str, tensorizer: Tensorizer, token_str: str = "[START_ENT]"
 ) -> T:
@@ -427,7 +599,7 @@ def _select_span_with_token(
             rnd_shift = int((rnd.random() - 0.5) * left_shit / 2)
             left_shit += rnd_shift
 
-            query_tensor = query_tensor_full[start_pos - left_shit :]
+            query_tensor = query_tensor_full[start_pos - left_shit:]
             cls_id = tensorizer.tokenizer.cls_token_id
             if query_tensor[0] != cls_id:
                 query_tensor = torch.cat([torch.tensor([cls_id]), query_tensor], dim=0)
