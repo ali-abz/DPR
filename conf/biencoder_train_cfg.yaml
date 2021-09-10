@@ -4,6 +4,7 @@ defaults:
   - encoder: multilingual_bert
   - train: porseman_biencoder
   - datasets: porseman_datasets
+  - losses: graded_losses
 
 train_datasets: [porseman_train]
 dev_datasets: [porseman_dev]
@@ -45,3 +46,10 @@ ignore_checkpoint_optimizer: False
 
 # set to >1 to enable multiple query encoders
 multi_q_encoder: False
+
+# configs related to graded datasets
+binary_trainer: False
+relations: [1.0, 0.9, 0.8, 0.0, 0.0]
+
+loss_function: RankCosineLoss
+

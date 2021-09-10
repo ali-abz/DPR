@@ -1,0 +1,23 @@
+# @package _group_
+
+A3GLoss:
+  _target_: dpr.models.biencoder_losses.A3GLoss
+  reduction: mean
+  min_shift: False
+  version: v1
+  cosine_scaler: True
+
+RamezaniSuperSimpleLoss:
+  _target_: dpr.models.biencoder_losses.RamezaniSuperSimpleLoss
+  cosine_scaler: True
+
+BCELoss:
+  _target_: dpr.models.biencoder_losses.BCELoss
+  reduction: sum
+  cosine_scaler: True
+
+RankCosineLoss:
+  _target_: dpr.models.biencoder_losses.RankCosineLoss
+  reduction: sum
+  version: v1
+  cosine_scaler: True

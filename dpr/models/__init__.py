@@ -8,7 +8,7 @@
 import importlib
 
 """
- 'Router'-like set of methods for component initialization with lazy imports 
+ 'Router'-like set of methods for component initialization with lazy imports
 """
 
 

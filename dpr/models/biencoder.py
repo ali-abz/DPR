@@ -13,6 +13,7 @@ import collections
 import logging
 import random
 from typing import Tuple, List
+import hydra
 from IPython import embed
 
 import numpy as np
@@ -24,6 +25,7 @@ from torch import nn
 from dpr.data.biencoder_data import BiEncoderSample, GradedBiEncoderSample
 from dpr.utils.data_utils import Tensorizer
 from dpr.utils.model_utils import CheckpointState
+# from dpr.models.biencoder_losses import get_loss_function
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +76,15 @@ def dot_product_scores(q_vectors: T, ctx_vectors: T) -> T:
 
 def cosine_scores(q_vector: T, ctx_vectors: T):
     # q_vector: n1 x D, ctx_vectors: n2 x D, result n1 x n2
-    return F.cosine_similarity(q_vector, ctx_vectors, dim=1)
+    qs = []
+    ctx_vectors_norm = torch.norm(ctx_vectors, dim=1)
+    for q in q_vector:
+        dot = q @ ctx_vectors.T
+        norm = torch.norm(q) * ctx_vectors_norm
+        cos = dot / norm
+        qs.append(cos)
+    return torch.stack(qs)
+    # return F.cosine_similarity(q_vector, ctx_vectors, dim=1)
 
 
 class BiEncoder(nn.Module):
@@ -287,6 +297,7 @@ class BiEncoder(nn.Module):
         shuffle_positives: bool = False,
         hard_neg_fallback: bool = True,
         query_token: str = None,
+        relation_grades: list = [1.0, 1.0, 1.0, 0.0, 0.0],
     ) -> GradedBiEncoderBatch:
         """
         Creates a batch of the biencoder training tuple.
@@ -342,7 +353,7 @@ class BiEncoder(nn.Module):
             all_ctxs = [positive_ctx] + neg_ctxs + hard_neg_ctxs + related_ctxs + highly_related_ctxs
 
             # relations
-            rel_positive, rel_highly_related, rel_related, rel_negative, rel_hard_negative = 5, 2, 2, 0, 0
+            rel_positive, rel_highly_related, rel_related, rel_negative, rel_hard_negative = relation_grades
             question_relations = []
             if relations != []:  # pre-padding with negatives
                 question_relations = [rel_negative] * len(relations[-1])
@@ -484,47 +495,13 @@ class BiEncoderNllLoss(object):
 
     @staticmethod
     def get_similarity_function():
-        return dot_product_scores
+        return cosine_scores
 
 
+# TODO: remove NLL from name
 class GradedBiEncoderNllLoss(object):
-    @staticmethod
-    def NDCG(ranks: T, verbose: True):
-        positions = torch.stack([torch.log2(x) for x in torch.arange(2., len(ranks) + 2)])
-        dcg = (ranks / positions).sum()
-        sorted_ranks = torch.stack(sorted(ranks, reverse=True))
-        ideal_dcg = (sorted_ranks / positions).sum()
-        ndcg = dcg / ideal_dcg
-        if verbose:
-            print(f'NDCG ranks: {ranks}')
-            # print(f'NDCG positions: {positions}')
-            # print(f'NDCG dcg: {dcg}')
-            # print(f'NDCG sorted_ranks: {sorted_ranks}')
-            # print(f'NDCG ideal dcg: {ideal_dcg}')
-            print(f'NDCG ndcg: {ndcg}')
-        return ndcg
-
-    def ANDCG_loss(self, scores: T, relations: list, reduction: str = 'mean', verbose=True):
-        if reduction not in ['mean', 'sum', 'none']:
-            error_str = f'reduction is expected to be in ["mean", "sum", "none"], got: {reduction}'
-            raise ValueError(error_str)
-        relations = T(relations)
-        losses = []
-        for q_scores, q_relations in zip(scores, relations):
-            sorted_q_scores, sorted_q_relations = zip(*sorted(zip(q_scores, q_relations), reverse=True))
-            sorted_q_scores = torch.stack(sorted_q_scores)
-            sorted_q_relations = torch.stack(sorted_q_relations)
-            if verbose:
-                print(f'ANDCG sorted_q_scores: {sorted_q_scores}')
-                print(f'ANDCG sorted_q_relations: {sorted_q_relations}')
-            ndcg = self.NDCG(sorted_q_relations * sorted_q_scores, verbose)
-            losses.append(1 - ndcg)
-        losses = torch.stack(losses)
-        if reduction == 'mean':
-            return torch.mean(losses)
-        if reduction == 'sum':
-            return torch.sum(losses)
-        return losses
+    def __init__(self, cfg):
+        self.loss_function = hydra.utils.instantiate(cfg.losses[cfg.loss_function])
 
     def calc(
         self,
@@ -539,38 +516,14 @@ class GradedBiEncoderNllLoss(object):
         loss_scale: float = None,
         verbose=False,
     ) -> Tuple[T, int]:
-        """
-        Computes nll loss for the given lists of question and ctx vectors.
-        Note that although hard_negative_idx_per_question in not currently in use, one can use it for the
-        loss modifications. For example - weighted NLL with different factors for hard vs regular negatives.
-        :return: a tuple of loss value and amount of correct predictions per batch
-        """
         scores = self.get_scores(q_vectors, ctx_vectors)
-        a3n_loss_mean = self.ANDCG_loss(scores, relations_per_question, reduction='mean', verbose=False)
+        relations_per_question = T(relations_per_question).to(scores.device)
+        loss = self.loss_function.calc(scores, relations_per_question)
         _, max_idxs = torch.max(scores, dim=1)
         correct_predictions_count = (
             max_idxs == torch.tensor(positive_idx_per_question).to(max_idxs.device)
         ).sum()
-        if verbose:
-            print('=' * 40)
-            print('dpr/models/biencoder.py:GradedBiEncoderNllLoss ~line 630')
-            # print(f'positive_idx_per_question: {positive_idx_per_question}')
-            # print(f'hard_negative_idx_per_question: {hard_negative_idx_per_question}')
-            # print(f'negative_idx_per_question: {negative_idx_per_question}')
-            # print(f'related_idx_per_question: {related_idx_per_question}')
-            # print(f'highly_related_idx_pre_question: {highly_related_idx_per_question}')
-            print(f'relations: {relations_per_question}')
-            print(f'scores: {scores}')
-            # print(f'scores shape: {scores.shape}')
-            # print(f'softmax_scores: {softmax_scores}')
-            print(f'a3n_loss_mean: {a3n_loss_mean}')
-            # print(f'max_score: {max_score}')
-            # print(f'max_idxs: {max_idxs}')
-            # print(f'correct_predictions_count: {correct_predictions_count}')
-            print('=' * 40)
-            embed()
-
-        return a3n_loss_mean, correct_predictions_count
+        return loss, correct_predictions_count
 
     @staticmethod
     def get_scores(q_vector: T, ctx_vectors: T) -> T:
@@ -579,7 +532,8 @@ class GradedBiEncoderNllLoss(object):
 
     @staticmethod
     def get_similarity_function():
-        return dot_product_scores
+        return cosine_scores
+        # return dot_product_scores
 
 
 def _select_span_with_token(
