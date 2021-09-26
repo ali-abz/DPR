@@ -19,3 +19,8 @@ binary_msmarco_super_small:
   _target_: dpr.data.retriever_data.CsvCtxSrc
   file: data.binary_msmarco_super_small
   id_prefix: ''
+
+c50_wiki:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.c50_wiki
+  id_prefix: ''

@@ -29,7 +29,7 @@ def download(resource_key: str, local=False):
         return [porseman_path2 / 'train_questions_pos.jsonl']
     if resource_key in ['data.porseman2_dev_binary', 'data.porseman2_dev_graded']:
         return [porseman_path2 / 'dev_questions_pos.jsonl']
-    if resource_key == 'data.porseman2-test':
+    if resource_key == 'data.porseman2_test':
         return [porseman_path2 / 'test.jsonl']
     if resource_key == 'data.porseman2_wiki':
         return [porseman_path2 / 'collection.csv']
@@ -79,3 +79,19 @@ def download(resource_key: str, local=False):
         return [binary_trec_dl_path / 'dev.jsonl']
     if resource_key == 'data.binary_trec_test':
         return [binary_trec_dl_path / 'test.jsonl']
+
+    # C50
+    if local:
+        c50_path = pathlib.Path('/home/ali/Desktop/AA/C50_tests/')
+    else:
+        c50_path = drive_dataset_path / 'C50'
+    if resource_key == 'data.c50_train':
+        return [c50_path / 'train.json']
+    if resource_key == 'data.c50_dev':
+        return [c50_path / 'dev.json']
+    if resource_key == 'data.c50_test':
+        return [c50_path / 'test.jsonl']
+    if resource_key == 'data.c50_wiki':
+        return [c50_path / 'wiki.tsv']
+
+    raise ValueError(f'Download module: resource key: {resource_key}, local: {local}')

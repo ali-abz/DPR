@@ -85,3 +85,15 @@ binary_trec_test:
   _target_: dpr.data.retriever_data.JsonlQASrc
   file: data.binary_trec_test
 
+# C50
+c50_train:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.c50_train
+
+c50_dev:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.c50_dev
+
+c50_test:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: data.c50_test

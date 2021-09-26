@@ -14,7 +14,6 @@ import logging
 import random
 from typing import Tuple, List
 import hydra
-from IPython import embed
 
 import numpy as np
 import torch
@@ -502,6 +501,8 @@ class BiEncoderNllLoss(object):
 class GradedBiEncoderNllLoss(object):
     def __init__(self, cfg):
         self.loss_function = hydra.utils.instantiate(cfg.losses[cfg.loss_function])
+        self.similarity_mehod = cfg.similarity_method
+        self.get_scores = self.get_similarity_function(self.similarity_mehod)
 
     def calc(
         self,
@@ -526,14 +527,12 @@ class GradedBiEncoderNllLoss(object):
         return loss, correct_predictions_count
 
     @staticmethod
-    def get_scores(q_vector: T, ctx_vectors: T) -> T:
-        f = GradedBiEncoderNllLoss.get_similarity_function()
-        return f(q_vector, ctx_vectors)
-
-    @staticmethod
-    def get_similarity_function():
-        return cosine_scores
-        # return dot_product_scores
+    def get_similarity_function(method_name: str):
+        if method_name == 'cosine':
+            return cosine_scores
+        if method_name == 'dot':
+            return dot_product_scores
+        raise ValueError(f'similarity_mehod: {method_name}, expected dot or cosine')
 
 
 def _select_span_with_token(
