@@ -494,7 +494,7 @@ class BiEncoderNllLoss(object):
 
     @staticmethod
     def get_similarity_function():
-        return cosine_scores
+        return dot_product_scores
 
 
 # TODO: remove NLL from name
