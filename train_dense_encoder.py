@@ -574,14 +574,14 @@ class BiEncoderTrainer(object):
             )
             if self.trainer_type == 'graded':
                 loss, correct_cnt = _do_biencoder_fwd_pass_graded(
-                self.biencoder,
-                biencoder_batch,
-                self.tensorizer,
-                cfg,
-                encoder_type=encoder_type,
-                rep_positions=rep_positions,
-                loss_scale=loss_scale,
-            )
+                    self.biencoder,
+                    biencoder_batch,
+                    self.tensorizer,
+                    cfg,
+                    encoder_type=encoder_type,
+                    rep_positions=rep_positions,
+                    loss_scale=loss_scale,
+                )
             else:
                 loss, correct_cnt = _do_biencoder_fwd_pass(
                     self.biencoder,
