@@ -5,28 +5,35 @@ A3GLoss:
   reduction: mean
   min_shift: False
   version: v1
-  cosine_scaler: True
-  min_max_scaler: False
+  cosine_scaler: False
+  min_max_scaler: True
   show_details_every: 100
 
 RamezaniSuperSimpleLoss:
   _target_: dpr.models.biencoder_losses.RamezaniSuperSimpleLoss
-  cosine_scaler: True
-  min_max_scaler: False
+  cosine_scaler: False
+  min_max_scaler: True
   show_details_every: 100
 
 BCELoss:
   _target_: dpr.models.biencoder_losses.BCELoss
   reduction: sum
-  cosine_scaler: True
-  min_max_scaler: False
+  cosine_scaler: False
+  min_max_scaler: True
   show_details_every: 100
 
 RankCosineLoss:
   _target_: dpr.models.biencoder_losses.RankCosineLoss
   reduction: sum
   version: v1
-  cosine_scaler: True
-  min_max_scaler: False
+  cosine_scaler: False
+  min_max_scaler: True
   show_details_every: 100
   v2_base_factor: 10
+
+KLDivergence:
+  _target_: dpr.models.biencoder_losses.KLDivergence
+  reduction: sum
+  cosine_scaler: False
+  min_max_scaler: True
+  show_details_every: 100

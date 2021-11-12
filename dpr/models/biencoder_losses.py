@@ -5,7 +5,7 @@ from torch import Tensor as T
 
 import logging
 
-EPS = 0.000001
+EPS = 1e-12
 
 
 def check_list(name, input_value, expected_values):
@@ -108,7 +108,7 @@ class A3GLoss:
             sorted_q_scores, sorted_q_relations = zip(*sorted(zip(q_scores, q_relations), reverse=True))
             sorted_q_scores = torch.stack(sorted_q_scores)
             sorted_q_relations = torch.stack(sorted_q_relations)
-            ndcg = self._NDCG(sorted_q_relations * sorted_q_scores)
+            ndcg = self._NDCG(sorted_q_relations * sorted_q_scores + EPS)
             ndcg_loss = self.ndcg_to_ndcg_loss_functoin(ndcg)
             losses.append(ndcg_loss)
         losses = torch.stack(losses)
@@ -259,6 +259,47 @@ class RankCosineLoss:
             scaled_scores = scaled_scores / scaled_scores.max(1, keepdim=True)[0]
         cosine_similarity = F.cosine_similarity(scaled_scores, relations)
         losses = self.similarity_to_loss_method(cosine_similarity)
+        loss = self.reduction_method(losses)
+        self.show_details(scores, scaled_scores, relations, losses, loss)
+        return loss
+
+
+@singleton
+class KLDivergence:
+    def __init__(self, cosine_scaler=False, min_max_scaler=True, reduction='sum', show_details_every=100):
+        self.cosine_scaler = cosine_scaler
+        self.min_max_scaler = min_max_scaler
+        if min_max_scaler == cosine_scaler:
+            raise ValueError(f'min_max_scaler and cosine_scaler are both: {min_max_scaler}')
+        self.reduction = reduction
+        self.reduction_method = _reduction_methods.get(self.reduction)
+        self.show_details_every = show_details_every
+        self.detail_counter = 0
+        self.log_instance()
+
+    def log_instance(self):
+        logger.info('Loss function: KLDivergence')
+        logger.info(f'KLDivergence cosine_scaler: {self.cosine_scaler}')
+        logger.info(f'KLDivergence min_max_scaler: {self.min_max_scaler}')
+        logger.info(f'KLDivergence reduction: {self.reduction}')
+
+    def show_details(self, original_scores, scores, relations, losses, loss):
+        self.detail_counter += 1
+        if self.detail_counter % self.show_details_every == 0:
+            logger.info(f'BATCH DETAILS: original_scores: {original_scores}')
+            logger.info(f'BATCH DETAILS: scaled_scores: {scores}')
+            logger.info(f'BATCH DETAILS: relations: {relations}')
+            logger.info(f'BATCH DETAILS: losses: {losses}')
+            logger.info(f'BATCH DETAILS: loss: {loss}')
+            self.log_instance()
+
+    def calc(self, scores, relations):
+        if self.cosine_scaler:
+            scaled_scores = 0.5 * (1 + scores)
+        if self.min_max_scaler:
+            scaled_scores = scores - scores.min(1, keepdim=True)[0]
+            scaled_scores = scaled_scores / scaled_scores.max(1, keepdim=True)[0]
+        losses = scaled_scores * torch.log(scaled_scores / (relations + EPS) + 1)
         loss = self.reduction_method(losses)
         self.show_details(scores, scaled_scores, relations, losses, loss)
         return loss
