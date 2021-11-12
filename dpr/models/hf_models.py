@@ -29,20 +29,28 @@ logger = logging.getLogger(__name__)
 
 def get_bert_biencoder_components(cfg, inference_only: bool = False, **kwargs):
     dropout = cfg.encoder.dropout if hasattr(cfg.encoder, "dropout") else 0.0
+    num_hidden_layers = cfg.encoder.num_hidden_layers
+    num_attention_heads = cfg.encoder.num_attention_heads
     question_encoder = HFBertEncoder.init_encoder(
         cfg.encoder.pretrained_model_cfg,
         projection_dim=cfg.encoder.projection_dim,
         dropout=dropout,
+        num_hidden_layers=num_hidden_layers,
+        num_attention_heads=num_attention_heads,
         pretrained=cfg.encoder.pretrained,
         **kwargs
     )
+    logger.info(f'num parameters: {question_encoder.num_parameters()}')
     ctx_encoder = HFBertEncoder.init_encoder(
         cfg.encoder.pretrained_model_cfg,
         projection_dim=cfg.encoder.projection_dim,
         dropout=dropout,
+        num_hidden_layers=num_hidden_layers,
+        num_attention_heads=num_attention_heads,
         pretrained=cfg.encoder.pretrained,
         **kwargs
     )
+    logger.info(f'num parameters: {ctx_encoder.num_parameters()}')
 
     fix_ctx_encoder = cfg.fix_ctx_encoder if hasattr(cfg, "fix_ctx_encoder") else False
 
@@ -196,6 +204,8 @@ class HFBertEncoder(BertModel):
         cfg_name: str,
         projection_dim: int = 0,
         dropout: float = 0.1,
+        num_hidden_layers: int = 12,
+        num_attention_heads: int = 12,
         pretrained: bool = True,
         **kwargs
     ) -> BertModel:
@@ -203,7 +213,10 @@ class HFBertEncoder(BertModel):
         if dropout != 0:
             cfg.attention_probs_dropout_prob = dropout
             cfg.hidden_dropout_prob = dropout
-
+        cfg.num_hidden_layers = num_hidden_layers
+        cfg.num_attention_heads = num_attention_heads
+        cfg.pooler_num_attention_heads = num_attention_heads  # careful here
+        logger.info(f'new bert cfg:\n{cfg}')
         if pretrained:
             return cls.from_pretrained(
                 cfg_name, config=cfg, project_dim=projection_dim, **kwargs
