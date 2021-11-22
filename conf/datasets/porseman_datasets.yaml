@@ -34,6 +34,10 @@ porseman2_dev_graded:
   _target_: dpr.data.biencoder_data.JsonGradedQADataset
   file: data.porseman2_dev_graded
 
+porseman2_ss_graded:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: /content/drive/MyDrive/IR_Datasets/Porseman2/questions_pos_ss.jsonl
+
 # trivia (no test1)
 trivia_train_1:
   _target_: dpr.data.biencoder_data.JsonQADataset

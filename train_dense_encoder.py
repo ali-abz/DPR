@@ -211,7 +211,7 @@ class BiEncoderTrainer(object):
 
         # eval_step = math.ceil(updates_per_epoch / cfg.train.eval_per_epoch)
         eval_step = cfg.train.eval_every_epoch
-        logger.info("  Eval step = %d", eval_step)
+        logger.info(f"  Eval step = {eval_step}")
         logger.info("***** Training *****")
 
         for epoch in range(self.start_epoch, int(cfg.train.num_train_epochs)):
@@ -498,7 +498,7 @@ class BiEncoderTrainer(object):
         self,
         scheduler,
         epoch: int,
-        eval_step: int,
+        eval_step,
         train_data_iterator: MultiSetDataIterator,
     ):
 
@@ -652,9 +652,12 @@ class BiEncoderTrainer(object):
             #     )
             #     self.biencoder.train()
 
-        logger.info("Epoch finished on %d", cfg.local_rank)
-        if (epoch + 1) % eval_step == 0:
-            self.validate_and_save(epoch, data_iteration, scheduler)
+        if isinstance(eval_step, int):
+            if (epoch + 1) % eval_step == 0:
+                self.validate_and_save(epoch, data_iteration, scheduler)
+        else:  # omegaconf.listconfig.ListConfig
+            if epoch in eval_step:
+                self.validate_and_save(epoch, data_iteration, scheduler)
 
         epoch_loss = (epoch_loss / epoch_batches) if epoch_batches > 0 else 0
         logger.info("Av Loss per epoch=%f", epoch_loss)
