@@ -4,23 +4,70 @@ porseman_wiki:
   _target_: dpr.data.retriever_data.CsvCtxSrc
   file: data.porseman_wiki
   id_prefix: ''
+  id_col: 0
+  text_col: 2
+  title_col: 1
 
 porseman2_wiki:
   _target_: dpr.data.retriever_data.CsvCtxSrc
   file: data.porseman2_wiki
   id_prefix: ''
+  id_col: 0
+  text_col: 2
+  title_col: 1
 
 msmarco_super_small:
   _target_: dpr.data.retriever_data.CsvCtxSrc
   file: data.msmarco_super_small
   id_prefix: ''
+  id_col: 0
+  text_col: 2
+  title_col: 1
 
 binary_msmarco_super_small:
   _target_: dpr.data.retriever_data.CsvCtxSrc
   file: data.binary_msmarco_super_small
   id_prefix: ''
+  id_col: 0
+  text_col: 2
+  title_col: 1
 
 c50_wiki:
   _target_: dpr.data.retriever_data.CsvCtxSrc
   file: data.c50_wiki
-  id_prefix: ''
+  id_prefix: 'c50'
+  id_col: 0
+  text_col: 2
+  title_col: 1
+
+gutenberg_wiki:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.gutenberg_wiki
+  id_prefix: 'gutenberg'
+  id_col: 0
+  text_col: 2
+  title_col: 1
+
+imdb_wiki:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.imdb_wiki
+  id_prefix: 'imdb'
+  id_col: 0
+  text_col: 2
+  title_col: 1
+
+news_wiki:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.news_wiki
+  id_prefix: 'news'
+  id_col: 0
+  text_col: 2
+  title_col: 1
+
+twitter_wiki:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.twitter_wiki
+  id_prefix: 'twitter'
+  id_col: 0
+  text_col: 2
+  title_col: 1
