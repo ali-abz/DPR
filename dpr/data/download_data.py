@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pathlib
 
-local = True
+local = False
 drive_dataset_path = pathlib.Path('/content/drive/MyDrive/IR_Datasets')
 
 
@@ -33,6 +33,10 @@ def download(resource_key: str, local=False):
         return [porseman_path2 / 'test.jsonl']
     if resource_key == 'data.porseman2_wiki':
         return [porseman_path2 / 'collection.csv']
+    if resource_key == 'data.porseman2_ss_graded':
+        return [porseman_path2 / 'ss_questions_pos.jsonl']
+    if resource_key == 'data.porseman2_ss_binary':
+        return [porseman_path2 / 'ss_questions_pos.jsonl']
 
     # trivia
     if local:
@@ -80,18 +84,60 @@ def download(resource_key: str, local=False):
     if resource_key == 'data.binary_trec_test':
         return [binary_trec_dl_path / 'test.jsonl']
 
-    # C50
+    # AA general
     if local:
-        c50_path = pathlib.Path('/home/ali/Desktop/AA/C50_tests/')
+        aa_path = pathlib.Path('/home/ali/Desktop/sem4/projects/datasets-for-AA/outputs/')
     else:
-        c50_path = drive_dataset_path / 'C50'
+        aa_path = drive_dataset_path / 'AA'
+
+    # c50
     if resource_key == 'data.c50_train':
-        return [c50_path / 'train.json']
+        return [aa_path / 'C50-train.json']
     if resource_key == 'data.c50_dev':
-        return [c50_path / 'dev.json']
+        return [aa_path / 'C50-dev.json']
     if resource_key == 'data.c50_test':
-        return [c50_path / 'test.jsonl']
+        return [aa_path / 'C50-test.jsonl']
     if resource_key == 'data.c50_wiki':
-        return [c50_path / 'wiki.tsv']
+        return [aa_path / 'C50-wiki.tsv']
+
+    # gutenberg
+    if resource_key == 'data.gutenberg_train':
+        return [aa_path / 'Gutenberg-train.json']
+    if resource_key == 'data.gutenberg_dev':
+        return [aa_path / 'Gutenberg-dev.json']
+    if resource_key == 'data.gutenberg_test':
+        return [aa_path / 'Gutenberg-test.jsonl']
+    if resource_key == 'data.gutenberg_wiki':
+        return [aa_path / 'Gutenberg-wiki.tsv']
+
+    # imdb
+    if resource_key == 'data.imdb_train':
+        return [aa_path / 'IMDB-train.json']
+    if resource_key == 'data.imdb_dev':
+        return [aa_path / 'IMDB-dev.json']
+    if resource_key == 'data.imdb_test':
+        return [aa_path / 'IMDB-test.jsonl']
+    if resource_key == 'data.imdb_wiki':
+        return [aa_path / 'IMDB-wiki.tsv']
+
+    # news
+    if resource_key == 'data.news_train':
+        return [aa_path / 'News-train.json']
+    if resource_key == 'data.news_dev':
+        return [aa_path / 'News-dev.json']
+    if resource_key == 'data.news_test':
+        return [aa_path / 'News-test.jsonl']
+    if resource_key == 'data.news_wiki':
+        return [aa_path / 'News-wiki.tsv']
+
+    # twitter
+    if resource_key == 'data.twitter_train':
+        return [aa_path / 'Twitter-train.json']
+    if resource_key == 'data.twitter_dev':
+        return [aa_path / 'Twitter-dev.json']
+    if resource_key == 'data.twitter_test':
+        return [aa_path / 'Twitter-test.jsonl']
+    if resource_key == 'data.twitter_wiki':
+        return [aa_path / 'Twitter-wiki.tsv']
 
     raise ValueError(f'Download module: resource key: {resource_key}, local: {local}')

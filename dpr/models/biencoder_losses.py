@@ -35,16 +35,15 @@ logger = logging.getLogger(__name__)
 
 @singleton
 class A3GLoss:
-    def __init__(self, reduction='mean', version='v1', min_shift=False, cosine_scaler=True, min_max_scaler=False, devider_eps_shift=EPS, show_details_every=100):
+    def __init__(self, reduction='mean', version='v1', ndcg_op='div', min_shift=False, cosine_scaler=False, min_max_scaler=False, devider_eps_shift=EPS, show_details_every=100):
         check_list('reduction', reduction, ['mean', 'sum', 'none'])
         check_list('version', version, ['v1', 'v2'])
+        check_list('ndcg_op', ndcg_op, ['divide', 'difference'])
         self.reduction = reduction
         self.version = version
         self.min_shift = min_shift
         self.cosine_scaler = cosine_scaler
         self.min_max_scaler = min_max_scaler
-        if min_max_scaler == cosine_scaler:
-            raise ValueError(f'min_max_scaler and cosine_scaler are both: {min_max_scaler}')
         self.devider_eps_shift = devider_eps_shift
         self.show_details_every = show_details_every
         self.detail_counter = 0
@@ -53,13 +52,24 @@ class A3GLoss:
             'v1': self.ndcg_to_ndcg_loss_v1,
             'v2': self.ndcg_to_ndcg_loss_v2,
         }
+        self.ndcg_op = ndcg_op
+        self.ndcg_op_function = self.get_ndcg_op()
         self.ndcg_to_ndcg_loss_functoin = ndcg_to_ndcg_loss_methods.get(self.version)
         self.log_instance()
 
+    def get_ndcg_op(self):
+        if self.ndcg_op == 'divide':
+            return lambda larger_num, smaller_num: smaller_num / larger_num
+        elif self.ndcg_op == 'difference':
+            return lambda larger_num, smaller_num: larger_num - smaller_num
+        else:
+            raise ValueError(f'Did not expect {self.ndcg_op} as ndcg_op')
+    # TODO: check if we need v1 or v2 when using difference TODO TODO
     def log_instance(self):
         logger.info('Loss function: A3GLoss')
         logger.info(f'A3GLoss reduction: {self.reduction}')
         logger.info(f'A3GLoss version: {self.version}')
+        logger.info(f'A3GLoss ndcg_op: {self.ndcg_op}')
         logger.info(f'A3GLoss cosine_scaler: {self.cosine_scaler}')
         logger.info(f'A3GLoss min_max_scaler: {self.min_max_scaler}')
         logger.info(f'A3GLoss devider_eps_shift: {self.devider_eps_shift}')

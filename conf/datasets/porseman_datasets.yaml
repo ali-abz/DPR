@@ -4,11 +4,9 @@
 porseman_train:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.porseman-train
-
 porseman_dev:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.porseman-dev
-
 porseman_test:
   _target_: dpr.data.retriever_data.CsvQASrc
   file: data.porseman-test
@@ -17,40 +15,35 @@ porseman_test:
 porseman2_train_binary:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.porseman2_train_binary
-
 porseman2_dev_binary:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.porseman2_dev_binary
-
 porseman2_test:
   _target_: dpr.data.retriever_data.JsonlQASrc
   file: data.porseman2_test
-
 porseman2_train_graded:
   _target_: dpr.data.biencoder_data.JsonGradedQADataset
   file: data.porseman2_train_graded
-
 porseman2_dev_graded:
   _target_: dpr.data.biencoder_data.JsonGradedQADataset
   file: data.porseman2_dev_graded
-
 porseman2_ss_graded:
   _target_: dpr.data.biencoder_data.JsonGradedQADataset
-  file: /content/drive/MyDrive/IR_Datasets/Porseman2/questions_pos_ss.jsonl
+  file: data.porseman2_ss_graded
+porseman2_ss_binary:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.porseman2_ss_binary
 
 # trivia (no test1)
 trivia_train_1:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.trivia-train-1
-
 trivia_train_40:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.trivia-train-40
-
 trivia_train_79:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.retriever.trivia-train-79
-
 trivia_dev_1:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.trivia-dev-1
@@ -59,19 +52,15 @@ trivia_dev_1:
 trec_train_graded:
   _target_: dpr.data.biencoder_data.JsonGradedQADataset
   file: data.trec_train_graded
-
 trec_dev_graded:
   _target_: dpr.data.biencoder_data.JsonGradedQADataset
   file: data.trec_dev_graded
-
 trec_train_binary:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.trec_train_binary
-
 trec_dev_binary:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.trec_dev_binary
-
 trec_test:
   _target_: dpr.data.retriever_data.JsonlQASrc
   file: data.trec_test
@@ -80,11 +69,9 @@ trec_test:
 binary_trec_train:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.binary_trec_train
-
 binary_trec_dev:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.binary_trec_dev
-
 binary_trec_test:
   _target_: dpr.data.retriever_data.JsonlQASrc
   file: data.binary_trec_test
@@ -93,11 +80,53 @@ binary_trec_test:
 c50_train:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.c50_train
-
 c50_dev:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.c50_dev
-
 c50_test:
   _target_: dpr.data.retriever_data.JsonlQASrc
   file: data.c50_test
+
+# Gutenberg
+gutenberg_train:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.gutenberg_train
+gutenberg_dev:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.gutenberg_dev
+gutenberg_test:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: data.gutenberg_test
+
+# IMDB
+imdb_train:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.imdb_train
+imdb_dev:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.imdb_dev
+imdb_test:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: data.imdb_test
+
+# News
+news_train:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.news_train
+news_dev:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.news_dev
+news_test:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: data.news_test
+
+# Twitter
+twitter_train:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.twitter_train
+twitter_dev:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.twitter_dev
+twitter_test:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: data.twitter_test
