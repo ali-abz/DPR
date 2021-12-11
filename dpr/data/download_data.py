@@ -5,7 +5,7 @@ local = True
 drive_dataset_path = pathlib.Path('/content/drive/MyDrive/IR_Datasets')
 
 
-def download(resource_key: str, local=False):
+def download(resource_key: str):
     # porseman 1 (mozafari)
     if local:
         porseman_path = pathlib.Path('/home/ali/Downloads/Colab Notebooks/IRDataset/')
