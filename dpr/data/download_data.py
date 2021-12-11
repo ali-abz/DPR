@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pathlib
 
-local = False
+local = True
 drive_dataset_path = pathlib.Path('/content/drive/MyDrive/IR_Datasets')
 
 
@@ -22,7 +22,8 @@ def download(resource_key: str, local=False):
 
     # porseman 2
     if local:
-        porseman_path2 = pathlib.Path('/home/ali/Desktop/sem4/projects/DPR-proper-small-dataset/outputs/')
+        # porseman_path2 = pathlib.Path('/home/ali/Desktop/sem4/projects/DPR-proper-small-dataset/outputs/')
+        porseman_path2 = pathlib.Path('C:\\Users\\ali\\Deskop\\ds\\porseman2')
     else:
         porseman_path2 = drive_dataset_path / 'Porseman2'
     if resource_key in ['data.porseman2_train_binary', 'data.porseman2_train_graded']:
@@ -54,7 +55,8 @@ def download(resource_key: str, local=False):
 
     # trec dl
     if local:
-        trec_dl_path = pathlib.Path('/home/ali/Desktop/sem4/projects/TREC-DL-graded/dpr_output/')
+        # trec_dl_path = pathlib.Path('/home/ali/Desktop/sem4/projects/TREC-DL-graded/dpr_output/')
+        trec_dl_path = pathlib.Path('C:\\Users\\ali\\Desktop\\ds\\trec-dl')
     else:
         trec_dl_path = drive_dataset_path / 'trec_dl_dataset'
     if resource_key == 'data.msmarco_super_small':
