@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pathlib
 
-local = True
+local = False
 drive_dataset_path = pathlib.Path('/content/drive/MyDrive/IR_Datasets')
 
 
@@ -58,7 +58,7 @@ def download(resource_key: str):
         # trec_dl_path = pathlib.Path('/home/ali/Desktop/sem4/projects/TREC-DL-graded/dpr_output/')
         trec_dl_path = pathlib.Path('C:\\Users\\ali\\Desktop\\ds\\trec-dl')
     else:
-        trec_dl_path = drive_dataset_path / 'trec_dl_dataset'
+        trec_dl_path = drive_dataset_path / 'TREC-DL-graded-DPR-format'
     if resource_key == 'data.msmarco_super_small':
         return [trec_dl_path / 'super_small_collection.tsv']
     if resource_key == 'data.trec_train_graded':
