@@ -34,7 +34,7 @@ porseman2_ss_binary:
   _target_: dpr.data.biencoder_data.JsonQADataset
   file: data.porseman2_ss_binary
 porseman2_dumped:
-  _target_: dpr.data.biencoder_data.JsonQADataset
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
   file: data.porseman2_dumped
 
 # trivia (no test1)
