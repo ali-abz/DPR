@@ -38,6 +38,8 @@ def download(resource_key: str):
         return [porseman_path2 / 'ss_questions_pos.jsonl']
     if resource_key == 'data.porseman2_ss_binary':
         return [porseman_path2 / 'ss_questions_pos.jsonl']
+    if resource_key == 'data.porseman2_dumped':
+        return [porseman_path2 / 'dump.jsonl']
 
     # trivia
     if local:
