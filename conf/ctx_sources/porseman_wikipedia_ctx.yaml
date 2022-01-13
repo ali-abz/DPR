@@ -16,6 +16,14 @@ porseman2_wiki:
   text_col: 2
   title_col: 1
 
+porseman3_wiki:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.porseman3_wiki
+  id_prefix: ''
+  id_col: 0
+  text_col: 2
+  title_col: 1
+
 msmarco_super_small:
   _target_: dpr.data.retriever_data.CsvCtxSrc
   file: data.msmarco_super_small

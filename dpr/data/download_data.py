@@ -41,6 +41,21 @@ def download(resource_key: str):
     if resource_key == 'data.porseman2_dumped':
         return [porseman_path2 / 'dump.jsonl']
 
+    # porseman 3
+    if local:
+        # porseman_path2 = pathlib.Path('/home/ali/Desktop/sem4/projects/DPR-proper-small-dataset/outputs/')
+        porseman_path3 = pathlib.Path('C:\\Users\\ali\\Deskop\\ds\\porseman2')
+    else:
+        porseman_path3 = drive_dataset_path / 'Porseman3'
+    if resource_key in ['data.porseman3_train_binary', 'data.porseman3_train_graded']:
+        return [porseman_path3 / 'train_questions_pos.jsonl']
+    if resource_key in ['data.porseman3_dev_binary', 'data.porseman3_dev_graded']:
+        return [porseman_path3 / 'dev_questions_pos.jsonl']
+    if resource_key == 'data.porseman3_test':
+        return [porseman_path3 / 'test.jsonl']
+    if resource_key == 'data.porseman3_wiki':
+        return [porseman_path3 / 'collection.csv']
+
     # trivia
     if local:
         pass

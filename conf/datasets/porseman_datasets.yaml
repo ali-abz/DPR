@@ -37,6 +37,23 @@ porseman2_dumped:
   _target_: dpr.data.biencoder_data.JsonGradedQADataset
   file: data.porseman2_dumped
 
+# porseman 3
+porseman3_train_binary:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.porseman3_train_binary
+porseman3_dev_binary:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.porseman3_dev_binary
+porseman3_test:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: data.porseman3_test
+porseman3_train_graded:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: data.porseman3_train_graded
+porseman3_dev_graded:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: data.porseman3_dev_graded
+
 # trivia (no test1)
 trivia_train_1:
   _target_: dpr.data.biencoder_data.JsonQADataset
