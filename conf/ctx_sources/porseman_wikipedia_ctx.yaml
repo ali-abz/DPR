@@ -24,6 +24,14 @@ porseman3_wiki:
   text_col: 2
   title_col: 1
 
+porseman_26k:
+  _target_: dpr.data.retriever_data.CsvCtxSrc
+  file: data.porseman_26k
+  id_prefix: ''
+  id_col: 0
+  text_col: 2
+  title_col: 1
+
 porseman_26k_summarized:
   _target_: dpr.data.retriever_data.CsvCtxSrc
   file: data.porseman_26k_summarized
