@@ -56,6 +56,10 @@ def download(resource_key: str):
     if resource_key == 'data.porseman3_wiki':
         return [porseman_path3 / 'collection.csv']
 
+    # porseman 26k summarized collection
+    if resource == 'data.porseman_26k_summarized':
+        return [drive_dataset_path / '26k-summarized-collection.tsv']
+
     # trivia
     if local:
         pass
