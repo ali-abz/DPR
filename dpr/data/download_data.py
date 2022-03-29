@@ -95,6 +95,25 @@ def download(resource_key: str):
     if resource_key == 'data.trec_test':
         return [trec_dl_path / 'test.jsonl']
 
+    # trec dl translated
+    if local:
+        trec_dl_translated_path = pathlib.Path('/home/ali/Desktop/sem4/projects/TREC-DL-graded-DPR-format-TRANSLATED/TREC-DL-graded-DPR-format-TRANSLATED/')
+        # trec_dl_path = pathlib.Path('C:\\Users\\ali\\Desktop\\ds\\trec-dl')
+    else:
+        trec_dl_translated_path = drive_dataset_path / 'TREC-DL-graded-DPR-format-TRANSLATED'
+    if resource_key == 'data.msmarco_super_small_translated':
+        return [trec_dl_translated_path / 'super_small_collection.tsv']
+    if resource_key == 'data.trec_train_graded_translated':
+        return [trec_dl_translated_path / 'train.jsonl']
+    if resource_key == 'data.trec_dev_graded_translated':
+        return [trec_dl_translated_path / 'dev.jsonl']
+    if resource_key == 'data.trec_train_binary_translated':
+        return [trec_dl_translated_path / 'train.jsonl']
+    if resource_key == 'data.trec_dev_binary_translated':
+        return [trec_dl_translated_path / 'dev.jsonl']
+    if resource_key == 'data.trec_test_translated':
+        return [trec_dl_translated_path / 'test.jsonl']
+
     # binary trec dl
     if local:
         binary_trec_dl_path = pathlib.Path('/home/ali/Desktop/sem4/projects/TREC-DL-binary/dpr_output/')

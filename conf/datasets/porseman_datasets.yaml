@@ -85,6 +85,23 @@ trec_test:
   _target_: dpr.data.retriever_data.JsonlQASrc
   file: data.trec_test
 
+# trec dl translated
+trec_train_graded_translated:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: data.trec_train_graded_translated
+trec_dev_graded_translated:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: data.trec_dev_graded_translated
+trec_train_binary_translated:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.trec_train_binary_translated
+trec_dev_binary_translated:
+  _target_: dpr.data.biencoder_data.JsonQADataset
+  file: data.trec_dev_binary_translated
+trec_test_translated:
+  _target_: dpr.data.retriever_data.JsonlQASrc
+  file: data.trec_test_translated
+
 # trec dl binary
 binary_trec_train:
   _target_: dpr.data.biencoder_data.JsonQADataset
