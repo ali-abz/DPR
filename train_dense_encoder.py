@@ -72,7 +72,7 @@ class BiEncoderTrainer(object):
         self.distributed_factor = cfg.distributed_world_size or 1
 
         import pickle
-        with open('./content/drive/MyDrive/conf.pickle', 'wb') as f:
+        with open('/content/drive/MyDrive/conf.pickle', 'wb') as f:
             pickle.dump(cfg, f)
             print('pickled')
 
