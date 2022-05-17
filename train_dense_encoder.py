@@ -15,6 +15,7 @@ import os
 import random
 import sys
 import time
+import pickle
 from typing import Tuple
 
 import hydra
@@ -67,14 +68,14 @@ class BiEncoderTrainer(object):
     and dense_retriever.py CLI tools.
     """
 
-    def __init__(self, cfg: DictConfig):
+    def __init__(self, cfg: DictConfig, save_temp_conf=False):
         self.shard_id = cfg.local_rank if cfg.local_rank != -1 else 0
         self.distributed_factor = cfg.distributed_world_size or 1
 
-        import pickle
-        with open('/content/drive/MyDrive/conf.pickle', 'wb') as f:
-            pickle.dump(cfg, f)
-            print('pickled')
+        if save_temp_conf:
+            import pickle
+            with open('/content/drive/MyDrive/conf.pickle', 'wb') as f:
+                pickle.dump(cfg, f)
 
         logger.info("***** Initializing components for training *****")
 
@@ -684,7 +685,7 @@ class BiEncoderTrainer(object):
         torch.save(state._asdict(), cp)
         logger.info("Saved checkpoint at %s", cp)
         with open(conf_cp, 'wb') as f:
-            f.write(cfg)
+            pickle.dump(cfg, f)
         return cp
 
     def _load_saved_state(self, saved_state: CheckpointState):
