@@ -16,7 +16,6 @@ import random
 import sys
 import time
 from typing import Tuple
-from IPython import embed
 
 import hydra
 import torch
@@ -667,6 +666,7 @@ class BiEncoderTrainer(object):
         cfg = self.cfg
         model_to_save = get_model_obj(self.biencoder)
         cp = os.path.join(cfg.output_dir, cfg.checkpoint_file_name + "." + str(epoch))
+        conf_cp = os.path.join(cfg.output_dir, cfg.checkpoint_file_name + "." + str(epoch) + '.conf')
         meta_params = get_encoder_params_state_from_cfg(cfg)
         state = CheckpointState(
             model_to_save.get_state_dict(),
@@ -678,6 +678,8 @@ class BiEncoderTrainer(object):
         )
         torch.save(state._asdict(), cp)
         logger.info("Saved checkpoint at %s", cp)
+        with open(conf_cp, 'wb') as f:
+            f.write(cfg)
         return cp
 
     def _load_saved_state(self, saved_state: CheckpointState):
