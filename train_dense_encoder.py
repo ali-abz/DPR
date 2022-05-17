@@ -71,6 +71,11 @@ class BiEncoderTrainer(object):
         self.shard_id = cfg.local_rank if cfg.local_rank != -1 else 0
         self.distributed_factor = cfg.distributed_world_size or 1
 
+        import pickle
+        with open('./conf.pickle', 'wb') as f:
+            pickle.dump(cfg, f)
+            print('pickled')
+
         logger.info("***** Initializing components for training *****")
 
         # graded dataset settings
