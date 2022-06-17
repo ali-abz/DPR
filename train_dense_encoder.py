@@ -68,7 +68,7 @@ class BiEncoderTrainer(object):
     and dense_retriever.py CLI tools.
     """
 
-    def __init__(self, cfg: DictConfig, save_temp_conf=False):
+    def __init__(self, cfg: DictConfig, save_temp_conf=True):
         self.shard_id = cfg.local_rank if cfg.local_rank != -1 else 0
         self.distributed_factor = cfg.distributed_world_size or 1
 
@@ -76,6 +76,7 @@ class BiEncoderTrainer(object):
             import pickle
             with open('/content/drive/MyDrive/conf.pickle', 'wb') as f:
                 pickle.dump(cfg, f)
+            logger.info('temp conf.pickle saved.')
 
         logger.info("***** Initializing components for training *****")
 

@@ -65,6 +65,7 @@ class A3GLoss:
         else:
             raise ValueError(f'Did not expect {self.ndcg_op} as ndcg_op')
     # TODO: check if we need v1 or v2 when using difference TODO TODO
+
     def log_instance(self):
         logger.info('Loss function: A3GLoss')
         logger.info(f'A3GLoss reduction: {self.reduction}')
