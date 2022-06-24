@@ -41,6 +41,13 @@ def download(resource_key: str):
     if resource_key == 'data.porseman2_dumped':
         return [porseman_path2 / 'dump.jsonl']
 
+    # porseman 2 tree generated
+    porseman_2_tree_path = drive_dataset_path / 'Porseman2_Tree'
+    if resource_key == 'data.porseman2_train_graded_tree':
+        return [porseman_2_tree_path / 'train.jsonl']
+    if resource_key == 'data.porseman2_dev_graded_tree':
+        return [porseman_2_tree_path / 'dev.jsonl']
+
     # porseman 3
     if local:
         # porseman_path2 = pathlib.Path('/home/ali/Desktop/sem4/projects/DPR-proper-small-dataset/outputs/')

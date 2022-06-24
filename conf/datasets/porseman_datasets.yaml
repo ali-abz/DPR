@@ -37,6 +37,14 @@ porseman2_dumped:
   _target_: dpr.data.biencoder_data.JsonGradedQADataset
   file: data.porseman2_dumped
 
+# porseman 2 tree generated
+porseman2_train_graded_tree:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: data.porseman2_train_graded_tree
+porseman2_dev_graded_tree:
+  _target_: dpr.data.biencoder_data.JsonGradedQADataset
+  file: data.porseman2_dev_graded_tree
+
 # porseman 3
 porseman3_train_binary:
   _target_: dpr.data.biencoder_data.JsonQADataset
