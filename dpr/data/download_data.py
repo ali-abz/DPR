@@ -47,6 +47,10 @@ def download(resource_key: str):
         return [porseman_2_tree_path / 'train.jsonl']
     if resource_key == 'data.porseman2_dev_graded_tree':
         return [porseman_2_tree_path / 'dev.jsonl']
+    if resource_key == 'data.porseman2_train_graded_tree_flat':
+        return [porseman_2_tree_path / 'train_flat_reduced.jsonl']
+    if resource_key == 'data.porseman2_dev_graded_tree_flat':
+        return [porseman_2_tree_path / 'dev_flat_reduced.jsonl']
 
     # porseman 3
     if local:
