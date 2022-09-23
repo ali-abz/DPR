@@ -271,7 +271,7 @@ class RankCosineLoss:
         cosine_similarity = F.cosine_similarity(scaled_scores, relations)
         losses = self.similarity_to_loss_method(cosine_similarity)
         loss = self.reduction_method(losses)
-        self.show_details(scores, scaled_scores, relations, losses, loss)
+        # self.show_details(scores, scaled_scores, relations, losses, loss)
         return loss
 
 
